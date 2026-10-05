@@ -1,0 +1,833 @@
+<title>ПСАД Тренажёр Налоги</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Интерактивный тренажёр по налогам Казахстана для подготовки к экзаменам ПСАД">
+<meta name="theme-color" content="#1e5c8f">
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<!-- iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ПСАД">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* Layout: sticky sidebar nav + scrollable content area */
+:root {
+  --bg: #f8f7f4;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --border: #e2e0d8;
+  --fg: #1a1a18;
+  --fg2: #5a5850;
+  --accent: #1e5c8f;
+  --accent-light: #e8f0f8;
+  --correct: #1a7a4a;
+  --correct-bg: #e8f5ee;
+  --wrong: #b0330e;
+  --wrong-bg: #fdf0ec;
+  --warn: #7a5c00;
+  --warn-bg: #fef8e1;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #13120f; --surface: #1e1d18; --surface2: #28271f;
+    --border: #3a3830; --fg: #f0efe8; --fg2: #a0998a;
+    --accent: #5599d4; --accent-light: #1a2c3d;
+    --correct: #3daa6a; --correct-bg: #0d2a1a;
+    --wrong: #e06040; --wrong-bg: #2d1208;
+    --warn: #d4a820; --warn-bg: #2a2000;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #13120f; --surface: #1e1d18; --surface2: #28271f;
+  --border: #3a3830; --fg: #f0efe8; --fg2: #a0998a;
+  --accent: #5599d4; --accent-light: #1a2c3d;
+  --correct: #3daa6a; --correct-bg: #0d2a1a;
+  --wrong: #e06040; --wrong-bg: #2d1208;
+  --warn: #d4a820; --warn-bg: #2a2000;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.6; }
+
+.shell { display: flex; height: 100%; }
+
+/* Sidebar */
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 16px;
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo span { display: block; color: var(--fg2); font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 11px; margin-top: 2px; }
+.nav-section { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.nav-label { padding: 4px 16px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg2); }
+.nav-item {
+  display: block; padding: 7px 16px;
+  font-size: 13px; color: var(--fg);
+  cursor: pointer; border: none; background: none; text-align: left; width: 100%;
+  transition: background .15s;
+}
+.nav-item:hover { background: var(--surface2); }
+.nav-item.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+.nav-item .badge { float: right; font-size: 10px; background: var(--surface2); color: var(--fg2); padding: 1px 6px; border-radius: 8px; margin-top: 2px; }
+.nav-item.active .badge { background: var(--accent); color: #fff; }
+
+/* Main */
+.main { flex: 1; overflow-y: auto; min-width: 0; }
+.panel { display: none; padding: 24px; max-width: 820px; }
+.panel.active { display: block; }
+
+h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; text-wrap: balance; }
+h3 { font-size: 15px; font-weight: 700; margin: 20px 0 10px; }
+h4 { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: var(--accent); }
+.subtitle { color: var(--fg2); font-size: 13px; margin-bottom: 20px; }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+.card-title { font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+.tag { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; margin-right: 6px; margin-bottom: 4px; }
+.tag-new { background: #fff3cd; color: #7a5c00; }
+.tag-d1 { background: #ddeeff; color: #1a4a7a; }
+.tag-d2 { background: #e8f5ee; color: #1a5a30; }
+.tag-d3 { background: #f5e8f0; color: #5a1a45; }
+
+/* Quiz */
+.quiz-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.quiz-progress { flex: 1; min-width: 180px; }
+.quiz-progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.quiz-progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .3s; }
+.quiz-score { font-size: 13px; color: var(--fg2); white-space: nowrap; }
+.quiz-score b { color: var(--fg); }
+
+.question-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.question-num { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin-bottom: 8px; }
+.question-text { font-size: 14px; line-height: 1.65; margin-bottom: 16px; font-weight: 500; }
+.question-context { background: var(--surface2); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-bottom: 14px; font-size: 13px; color: var(--fg2); line-height: 1.6; }
+
+.options { display: flex; flex-direction: column; gap: 8px; }
+.option-btn {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; border-radius: 8px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  cursor: pointer; font-size: 13px; text-align: left; color: var(--fg);
+  transition: border-color .15s, background .15s;
+  font-family: inherit;
+}
+.option-btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-light); }
+.option-btn .opt-letter { font-weight: 700; color: var(--accent); min-width: 18px; font-variant-numeric: tabular-nums; }
+.option-btn.correct { border-color: var(--correct); background: var(--correct-bg); }
+.option-btn.wrong { border-color: var(--wrong); background: var(--wrong-bg); }
+.option-btn:disabled { cursor: default; }
+
+.explanation { margin-top: 14px; padding: 12px 14px; border-radius: 8px; background: var(--surface2); font-size: 13px; line-height: 1.65; border-left: 3px solid var(--accent); }
+.explanation b { color: var(--accent); }
+
+.quiz-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; flex-wrap: wrap; gap: 8px; }
+.btn { padding: 9px 18px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: opacity .15s; }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--surface2); color: var(--fg); border: 1px solid var(--border); }
+
+/* Cheat sheet */
+.rules-grid { display: grid; gap: 12px; }
+.rule-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.rule-card h4 { margin-top: 0; }
+.rule-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+.rule-table th { background: var(--surface2); text-align: left; padding: 5px 8px; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--fg2); }
+.rule-table td { padding: 5px 8px; border-top: 1px solid var(--border); vertical-align: top; font-variant-numeric: tabular-nums; }
+.rule-table tr:hover td { background: var(--surface2); }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+.pill-new { background: #fff3cd; color: #7a5c00; }
+.pill-old { background: var(--surface2); color: var(--fg2); }
+
+/* Summary on quiz finish */
+.result-box { text-align: center; padding: 32px 20px; }
+.result-score { font-size: 56px; font-weight: 800; color: var(--accent); line-height: 1; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+.result-label { font-size: 14px; color: var(--fg2); margin-bottom: 20px; }
+.result-stars { font-size: 28px; margin-bottom: 16px; }
+
+/* Theme toggle */
+.theme-toggle { margin-top: auto; padding: 12px 16px; border-top: 1px solid var(--border); }
+.theme-toggle button { font-size: 12px; color: var(--fg2); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .sidebar { width: 180px; }
+  .panel { padding: 16px; }
+  h2 { font-size: 17px; }
+}
+@media (max-width: 480px) {
+  .shell { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .nav-section { display: flex; padding: 0; border: none; }
+  .nav-label { display: none; }
+  .nav-item { padding: 10px 12px; white-space: nowrap; border-bottom: 3px solid transparent; }
+  .nav-item.active { border-bottom-color: var(--accent); background: none; }
+  .sidebar-logo, .theme-toggle { display: none; }
+}
+
+/* ── Install Banner ── */
+#install-banner {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+  background: var(--accent); color: #fff;
+  padding: 12px 16px;
+  align-items: center; gap: 12px;
+  box-shadow: 0 -2px 12px rgba(0,0,0,.25);
+}
+#install-banner .install-icon { font-size: 24px; flex-shrink: 0; }
+#install-banner .install-text { flex: 1; }
+#install-banner .install-text strong { display: block; font-size: 14px; }
+#install-banner .install-text span { font-size: 12px; opacity: .85; }
+#install-btn {
+  background: #fff; color: var(--accent);
+  border: none; border-radius: 6px;
+  padding: 7px 14px; font-size: 13px; font-weight: 700;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+}
+#install-dismiss {
+  background: none; border: none; color: #fff;
+  font-size: 20px; cursor: pointer; padding: 0 4px; opacity: .7;
+  flex-shrink: 0;
+}
+#install-dismiss:hover { opacity: 1; }
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap">
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="sidebar-logo">ПСАД<span>Тренажёр · Налоги 2026</span></div>
+    <div class="nav-section">
+      <div class="nav-label">Главная</div>
+      <button class="nav-item active" onclick="show('home')">🏠 Обзор</button>
+      <button class="nav-item" onclick="show('rates')">📋 Ставки &amp; нормы</button>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Экзамены</div>
+      <button class="nav-item" onclick="show('d1')"><span class="badge">D1</span>Июнь 2025</button>
+      <button class="nav-item" onclick="show('d2')"><span class="badge">D2</span>Ноябрь 2025</button>
+      <button class="nav-item" onclick="show('d3')"><span class="badge">D3</span>Июль 2024</button>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Тесты</div>
+      <button class="nav-item" onclick="startQuiz('all')">🎯 Все вопросы</button>
+      <button class="nav-item" onclick="startQuiz('kpn')">КПН</button>
+      <button class="nav-item" onclick="startQuiz('nds')">НДС</button>
+      <button class="nav-item" onclick="startQuiz('ipn')">ИПН / Соцналог</button>
+      <button class="nav-item" onclick="startQuiz('admin')">Администрирование</button>
+      <button class="nav-item" onclick="startQuiz('nr')">Нерезиденты</button>
+      <button class="nav-item" onclick="startQuiz('2026')" style="color:var(--warn);font-weight:700">🆕 НК РК 2026</button>
+    </div>
+    <div class="theme-toggle">
+      <button onclick="toggleTheme()">☀︎ / ☾ Тема</button>
+    </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- HOME -->
+    <div id="panel-home" class="panel active">
+      <h2>Тренажёр ПСАД — Налоги РК</h2>
+      <p class="subtitle">Три реальных экзамена · НК РК от 18.07.2025 · 60+ вопросов с разбором</p>
+
+      <div class="card">
+        <div class="card-title">⚡ Ключевые изменения НК РК с 18.07.2025 (экзамен 2026)</div>
+        <table class="rule-table">
+          <tr><th>Налог</th><th>Было</th><th>Стало</th><th>Статья</th></tr>
+          <tr><td>НДС базовая ставка</td><td class="pill pill-old">12%</td><td><span class="pill pill-new">16%</span></td><td>Ст. 503</td></tr>
+          <tr><td>НДС лекарства (с 01.01.2026)</td><td class="pill pill-old">12%</td><td><span class="pill pill-new">5%</span></td><td>Ст. 503</td></tr>
+          <tr><td>ИПН зарплата</td><td class="pill pill-old">10% плоская</td><td><span class="pill pill-new">10% / 15%</span></td><td>Ст. 363</td></tr>
+          <tr><td>ИПН дивиденды</td><td class="pill pill-old">5% (плоская)</td><td><span class="pill pill-new">5% / 15%</span></td><td>Ст. 363</td></tr>
+          <tr><td>Базовый вычет ИПН</td><td class="pill pill-old">14 МРП/мес</td><td><span class="pill pill-new">30 МРП/мес</span></td><td>Ст. 403</td></tr>
+          <tr><td>Соцналог</td><td class="pill pill-old">9,5%</td><td><span class="pill pill-new">6%</span></td><td>Ст. 557</td></tr>
+          <tr><td>КПН банки/казино</td><td class="pill pill-old">20%</td><td><span class="pill pill-new">25%</span></td><td>Ст. 357</td></tr>
+          <tr><td>УД (СНР)</td><td class="pill pill-old">3%</td><td><span class="pill pill-new">4%</span></td><td>Ст. 726</td></tr>
+          <tr><td>МРП 2026</td><td class="pill pill-old">4 205 тг</td><td><span class="pill pill-new">4 325 тг</span></td><td>Бюджет РК 2026</td></tr>
+          <tr><td>Порог НДС (с 01.01.2026)</td><td class="pill pill-old">30 000 МРП</td><td><span class="pill pill-new">10 000 МРП</span></td><td>Ст. 82</td></tr>
+          <tr><td>ОПВР работодатель (с 01.01.2026)</td><td class="pill pill-old">2,5%</td><td><span class="pill pill-new">3,5%</span></td><td>Закон об ОПП</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📌 Важно: НК на дату экзамена</div>
+        <table class="rule-table">
+          <tr><th>Экзамен</th><th>НК на дату</th><th>НДС</th><th>Соцналог</th><th>МРП</th></tr>
+          <tr><td><span class="tag tag-d1">D1</span> Июнь 2025</td><td>30.06.2025</td><td>12%</td><td>9,5%</td><td>3 932 тг</td></tr>
+          <tr><td><span class="tag tag-d2">D2</span> Ноябрь 2025</td><td>30.06.2025</td><td>12%</td><td>9,5%</td><td>3 932 тг</td></tr>
+          <tr><td><span class="tag tag-d3">D3</span> Июль 2024</td><td>30.06.2024</td><td>12%</td><td>9,5%</td><td>3 692 тг</td></tr>
+          <tr><td>После 18.07.2025</td><td>18.07.2025+</td><td>16%</td><td>6%</td><td>3 932 тг <small>(до 31.12.25)</small></td></tr>
+          <tr><td><b>Экзамен 2026</b></td><td>01.01.2026+</td><td>16% / 5%*</td><td>6%</td><td><b>4 325 тг</b></td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔑 Правила, которые чаще всего путают</div>
+        <table class="rule-table">
+          <tr><th>#</th><th>Правило</th></tr>
+          <tr><td>1</td><td><b>Дата дохода</b> = дата подписания акта <b>обеими</b> сторонами (не дата выписки АВР)</td></tr>
+          <tr><td>2</td><td><b>Переоценка</b> не признаётся доходом. Прирост = цена − <b>первоначальная</b> стоимость (не балансовая)</td></tr>
+          <tr><td>3</td><td><b>ЭСФ</b> = ключевое условие вычета по КПН. Режим поставщика (СНР) не ограничивает вычет покупателя</td></tr>
+          <tr><td>4</td><td><b>Нулевая ≠ освобождение</b>: при 0% зачёт входящего НДС разрешён; при освобождении — нет</td></tr>
+          <tr><td>5</td><td><b>Курс</b> для КПН/НДС за нерезидента = НБ РК на <b>дату оплаты</b> (если оплата раньше акта)</td></tr>
+          <tr><td>6</td><td><b>Суточные</b>: норма КПН-вычет = 6 МРП/сут; норма ИПН-освобождение = 8 МРП/сут</td></tr>
+          <tr><td>7</td><td><b>Гарантийный ремонт</b> = освобождение от НДС; <b>постгарантийный</b> = облагается</td></tr>
+          <tr><td>8</td><td><b>Соцналог к уплате</b> = объект × ставка − соцотчисления. Объект = ФОТ − ОПВ − ВОСМС</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- СТАВКИ -->
+    <div id="panel-rates" class="panel">
+      <h2>Ставки и нормы</h2>
+      <p class="subtitle">НК РК на 30.06.2025 (D1/D2) и изменения с 18.07.2025</p>
+
+      <div class="rules-grid">
+        <div class="rule-card">
+          <h4>КПН</h4>
+          <table class="rule-table">
+            <tr><th>Субъект</th><th>Ставка</th></tr>
+            <tr><td>Общая ставка</td><td>20%</td></tr>
+            <tr><td>С/х организации</td><td>3%</td></tr>
+            <tr><td>Банки / казино (с 18.07.2025)</td><td><span class="pill pill-new">25%</span></td></tr>
+            <tr><td>КПН у источника: дивиденды</td><td>15% (общая) / 5% (льгота)</td></tr>
+            <tr><td>КПН у источника: роялти</td><td>15%</td></tr>
+            <tr><td>КПН у источника: вознаграждение</td><td>15%</td></tr>
+            <tr><td>КПН у источника: прочие доходы</td><td>20%</td></tr>
+            <tr><td>Перенос убытков</td><td>10 лет</td></tr>
+            <tr><td>Авансы I кв. (до декларации)</td><td>КПН прошлого года / 4</td></tr>
+          </table>
+        </div>
+        <div class="rule-card">
+          <h4>НДС</h4>
+          <table class="rule-table">
+            <tr><th>Вид</th><th>Ставка (до 18.07.25)</th><th>Ставка (после)</th></tr>
+            <tr><td>Внутренняя реализация</td><td>12%</td><td><span class="pill pill-new">16%</span></td></tr>
+            <tr><td>Экспорт</td><td>0%</td><td>0%</td></tr>
+            <tr><td>Лекарства (с 01.01.2026)</td><td>12%</td><td><span class="pill pill-new">5%</span></td></tr>
+            <tr><td>Мед. изделия, гарантийный ремонт…</td><td colspan="2">Освобождение</td></tr>
+            <tr><td>Порог регистрации по НДС</td><td>30 000 МРП <small>(до 01.01.2026)</small></td><td><span class="pill pill-new">10 000 МРП</span> <small>(с 01.01.2026)</small></td></tr>
+          </table>
+        </div>
+        <div class="rule-card">
+          <h4>ИПН</h4>
+          <table class="rule-table">
+            <tr><th>Вид дохода</th><th>Ставка (до 18.07.25)</th><th>Ставка (после)</th></tr>
+            <tr><td>Зарплата (до 8 500 МРП/год)</td><td>10%</td><td><span class="pill pill-new">10%</span></td></tr>
+            <tr><td>Зарплата (свыше 8 500 МРП/год)</td><td>10%</td><td><span class="pill pill-new">15%</span></td></tr>
+            <tr><td>Дивиденды (до 230 000 МРП)</td><td>5%</td><td><span class="pill pill-new">5%</span></td></tr>
+            <tr><td>Дивиденды (свыше 230 000 МРП)</td><td>5%</td><td><span class="pill pill-new">15%</span></td></tr>
+            <tr><td>Частнопрактикующие</td><td>10%</td><td><span class="pill pill-new">9%</span></td></tr>
+            <tr><td>Нерезидент (зарплата)</td><td colspan="2">10%</td></tr>
+            <tr><td>Базовый вычет</td><td>14 МРП/мес</td><td><span class="pill pill-new">30 МРП/мес</span></td></tr>
+            <tr><td>Суточные (ИПН, норма РК)</td><td colspan="2">8 МРП/сут</td></tr>
+            <tr><td>Суточные (КПН вычет, норма РК)</td><td colspan="2">6 МРП/сут</td></tr>
+          </table>
+        </div>
+        <div class="rule-card">
+          <h4>Соцналог и платежи</h4>
+          <table class="rule-table">
+            <tr><th>Вид</th><th>До 18.07.25</th><th>После</th></tr>
+            <tr><td>Соцналог (работодатель)</td><td>9,5%</td><td><span class="pill pill-new">6%</span></td></tr>
+            <tr><td>Соцналог ИП (за себя)</td><td colspan="2">2 МРП/мес</td></tr>
+            <tr><td>Соцналог ИП (за работника)</td><td colspan="2">1 МРП/мес</td></tr>
+            <tr><td>ОПВ работник</td><td colspan="2">10%</td></tr>
+            <tr><td>ОПВР работодатель</td><td>2,5% <small>(до 01.01.2026)</small></td><td><span class="pill pill-new">3,5%</span> <small>(с 01.01.2026)</small></td></tr>
+            <tr><td>ВОСМС работник</td><td colspan="2">2%</td></tr>
+            <tr><td>ООСМС работодатель</td><td colspan="2">3%</td></tr>
+            <tr><td>Соцотчисления</td><td colspan="2">3,5% от (ФОТ − ОПВ)</td></tr>
+            <tr><td>Срок уплаты соцналога</td><td colspan="2">до 25-го числа след. мес. начисления</td></tr>
+          </table>
+        </div>
+        <div class="rule-card">
+          <h4>СНР — Упрощённая декларация</h4>
+          <table class="rule-table">
+            <tr><th>Параметр</th><th>До 18.07.25</th><th>После</th></tr>
+            <tr><td>Ставка УД</td><td>3%</td><td><span class="pill pill-new">4%</span></td></tr>
+            <tr><td>КПН/ИПН (доля)</td><td>1,5%</td><td><span class="pill pill-new">2%</span></td></tr>
+            <tr><td>Соцналог (доля)</td><td>1,5%</td><td><span class="pill pill-new">2%</span></td></tr>
+            <tr><td>Уменьшение: ИП ≥</td><td colspan="2">23 МРП/мес на работника</td></tr>
+            <tr><td>Уменьшение: ТОО ≥</td><td colspan="2">29 МРП/мес на работника</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- D1 -->
+    <div id="panel-d1" class="panel">
+      <h2>Экзамен D1 — Июнь 2025</h2>
+      <p class="subtitle">НК РК на 30.06.2025 · МРП 3 932 тг · НДС 12% · Соцналог 9,5%</p>
+      <div class="card"><div class="card-title">Задание 1 — КПН (25 баллов)</div>
+        <p>ТОО, поставка медтехники + аренда + ремонт. Итог после исправлений:</p>
+        <table class="rule-table" style="margin-top:10px">
+          <tr><th>Показатель</th><th>Сумма, тыс. тг</th><th>Комментарий</th></tr>
+          <tr><td>СГД</td><td>1 842 000</td><td>Аренда 18 000 = доход 2026 (акт подписан 05.01.2026)</td></tr>
+          <tr><td>Вычеты</td><td>1 257 450</td><td>Товары + ФА + ФОТ + услуги (28 000, нет ЭСФ на 7 000)</td></tr>
+          <tr><td>Убытки (зем. уч. + НУО)</td><td>5 000</td><td>Уменьшают НОД</td></tr>
+          <tr><td><b>НОД</b></td><td><b>579 550</b></td><td></td></tr>
+          <tr><td>КПН 20%</td><td>115 910</td><td></td></tr>
+          <tr><td>Зачёт КПН у источника</td><td>−2 100</td><td>Депозит</td></tr>
+          <tr><td><b>КПН к уплате</b></td><td><b>113 810</b></td><td></td></tr>
+        </table>
+        <div style="background:var(--warn-bg);border-left:3px solid var(--warn);padding:10px 14px;border-radius:0 6px 6px 0;margin-top:10px;font-size:12px;color:var(--fg2)">
+          ⚠️ <b>Ловушки:</b> Переоценка не признаётся доходом — прирост от первоначальной стоимости (23 000), не балансовой. Аренда: АВР от 31.12, но подписан 05.01.2026 → доход 2026 г.
+        </div>
+      </div>
+      <div class="card"><div class="card-title">Задание 2 — НДС I кв. 2025 (пропорциональный метод)</div>
+        <table class="rule-table">
+          <tr><th>Операция</th><th>Оборот, тг</th><th>НДС</th></tr>
+          <tr><td>1. Внутренний рынок</td><td>37 000 000</td><td>4 440 000 нач.</td></tr>
+          <tr><td>2. Монголия (товар в Узбекистане)</td><td>7 496 100</td><td>0 (место реал. не РК)</td></tr>
+          <tr><td>3. Нерезидент (перевозка)</td><td>496 710</td><td>59 605 за нерезид. (курс 03.03)</td></tr>
+          <tr><td>4. Филиал в Узбекистане</td><td>8 000 000</td><td>0 (не РК)</td></tr>
+          <tr><td>5. Натуральная оплата</td><td>710 000</td><td>85 200 нач.</td></tr>
+          <tr><td>6. Акции АО Береке</td><td>12 000 000</td><td>0 (освобождение)</td></tr>
+          <tr><td>7. Покупка товаров</td><td>—</td><td>482 143 зачёт</td></tr>
+          <tr><td>8. Импорт из Китая</td><td>17 500 000</td><td>2 100 000 зачёт</td></tr>
+          <tr><td>9. Услуги нерезидент РФ</td><td>7 400 000</td><td>200 000 зачёт (уплачен Q4 2024)</td></tr>
+          <tr><td>10. Корректировка (оплата)</td><td>—</td><td>160 714 зачёт</td></tr>
+        </table>
+        <div style="margin-top:10px;font-size:13px;">
+          <b>Доля</b> = 37 710 000 / 65 206 100 = <b>57,83%</b><br>
+          <b>НДС в зачёт итого (с пропорцией)</b> = 1 701 925 тг
+        </div>
+      </div>
+      <div class="card"><div class="card-title">Задание 3 — Нерезиденты</div>
+        <p><b>Инжиниринг Германия 45 000 EUR, курс 583:</b> НДС = 3 148 200 тг; КПН (без конвенции) = 5 247 000 тг (20% — прочие доходы). Конвенция: сертификат ДО выплаты, фактический получатель, форма 101.04.</p>
+        <p style="margin-top:8px"><b>MedOptika KZ:</b> регистрация по НДС НЕ нужна — облагаемый оборот (очки 41,5 млн) &lt; 30 000 МРП × 3 932 = 117,96 млн тг (порог на дату экзамена D1, 2025). ⚠️ С 01.01.2026 порог снижен до 10 000 МРП. НДС за нерезидента уплачивает ЛЮБАЯ компания (ст. 454).</p>
+      </div>
+    </div>
+
+    <!-- D2 -->
+    <div id="panel-d2" class="panel">
+      <h2>Экзамен D2 — Ноябрь 2025</h2>
+      <p class="subtitle">НК РК на 30.06.2025 · МРП 3 932 тг · МЗП 85 000 тг · НДС 12% · Соцналог 9,5% · ⚠️ Экзамен ноябрь 2025, но тестирует НК на 30.06.2025</p>
+      <div class="card"><div class="card-title">Задание 1 — КПН</div>
+        <p><b>Опер. 1 (агрегатор такси «Быстрый партнёр»):</b> СГД = 7% × 5 365 365 136 = 375 575 560 тг. Суточные к вычету: 6 МРП × 10 дней = 235 920 тг. Членские взносы НПП: лимит 0,1% от СГД = 375 576 тг (факт 5,6 млн — превышает). Вознаграждение по лизингу вычет полностью (ст. 246). Итог: СГД &lt; Вычеты → <b>УБЫТОК, КПН = 0</b>.</p>
+        <p style="margin-top:8px"><b>Опер. 2 (ТехИндастрис):</b></p>
+        <table class="rule-table" style="margin-top:6px">
+          <tr><th>Операция</th><th>Расчёт</th><th>Налог</th></tr>
+          <tr><td>Роялти Германия (нет сертификата)</td><td>12 000 × 520 × 15%</td><td>936 000 тг КПН</td></tr>
+          <tr><td>Дивиденды нерезиденту Нидерланды</td><td>Владение &gt;3 лет, не недропользователь</td><td>0 (освобождение ст. 682 п.9)</td></tr>
+          <tr><td>Дивиденды физлицу-резиденту</td><td>6 000 000 × 5%</td><td>300 000 тг ИПН</td></tr>
+        </table>
+      </div>
+      <div class="card"><div class="card-title">Задание 2 — НДС Q3 2025 (пропорциональный метод, ставка 12%)</div>
+        <div style="background:var(--warn-bg);border-left:3px solid var(--warn);padding:8px 14px;border-radius:0 6px 6px 0;font-size:12px;color:var(--fg2);margin-bottom:10px">
+          ⚠️ <b>Важно для D2:</b> НК РК на 30.06.2025 → НДС 12% (не 16%!), порог НДС 30 000 МРП. Несмотря на то что экзамен в ноябре 2025.
+        </div>
+        <table class="rule-table">
+          <tr><th>Опер.</th><th>Суть</th><th>Оборот</th><th>НДС-эффект</th></tr>
+          <tr><td>1</td><td>Реализация ПО (лицензии) казахстанскому покупателю</td><td>Облагаемый</td><td>12% — место реализации РК (ст. 441: права на ПО → место покупателя)</td></tr>
+          <tr><td>2</td><td>Услуги агрегатора такси водителям — физлицам</td><td>Облагаемый</td><td>12% — доход = 7% от суммы заказов, это вознаграждение агента</td></tr>
+          <tr><td>3</td><td>Роялти нерезиденту (Германия) за ПО</td><td>Не оборот НДС</td><td>НДС <b>не начисляется</b> при выплате роялти нерезиденту. Но если нерезидент оказывает услуги → НДС за нерезидента.</td></tr>
+          <tr><td>4</td><td>Безвозмездная передача ОС (автомобиля) дочерней организации</td><td>Облагаемый оборот</td><td>Безвозмездная передача = реализация. База = балансовая стоимость (если цена передачи &lt; баланс.).</td></tr>
+          <tr><td>5</td><td>Продажа доли участия в другом ТОО</td><td>Освобождённый</td><td>Реализация доли участия — освобождение (ст. 396). Включается в знаменатель пропорции.</td></tr>
+        </table>
+        <p style="margin-top:10px;font-size:13px"><b>Пропорциональный метод:</b> Доля = Облагаемый оборот / (Облагаемый + Освобождённый). НДС в зачёт × долю. Нулевой оборот — включается в числитель (не освобождение).</p>
+      </div>
+      <div class="card"><div class="card-title">Задание 3 — ИПН и Соцналог (август 2025, выплата 7 сентября)</div>
+        <table class="rule-table">
+          <tr><th>Показатель</th><th>Цо Р.Р. (резидент)</th><th>Фадеев А.А. (нерезидент)</th></tr>
+          <tr><td>Облагаемый доход</td><td>1 000 000 тг</td><td>1 000 000 тг</td></tr>
+          <tr><td>ОПВ (10%)</td><td>100 000</td><td>не удерживается</td></tr>
+          <tr><td>ВОСМС (2%)</td><td>20 000</td><td>не участвует</td></tr>
+          <tr><td>Вычет 14 МРП</td><td>55 048</td><td>нет вычетов</td></tr>
+          <tr><td>ИПН</td><td>82 495 (10%)</td><td>100 000 (10%)</td></tr>
+          <tr><td>Объект соцналога</td><td>880 000 (−ОПВ−ВОСМС)</td><td>1 000 000</td></tr>
+          <tr><td>Соцналог нач. 9,5%</td><td>83 600</td><td>95 000</td></tr>
+          <tr><td>Соцотчисления</td><td>31 500</td><td>35 000</td></tr>
+          <tr><td><b>Соцналог к уплате</b></td><td><b>52 100</b></td><td><b>60 000</b></td></tr>
+        </table>
+        <p style="margin-top:8px;font-size:13px"><b>Итого соцналог</b> = 112 100 тг. <b>Срок</b>: до 25 сентября 2025 г.</p>
+      </div>
+    </div>
+
+    <!-- D3 -->
+    <div id="panel-d3" class="panel">
+      <h2>Экзамен D3 — Июль 2024</h2>
+      <p class="subtitle">НК РК на 30.06.2024 · МРП 3 692 тг · МЗП 80 000 тг · НДС 12% · Соцналог 9,5%</p>
+      <div class="card"><div class="card-title">Задание 1 — КПН (25 баллов) · Медоборудование + услуги ремонта</div>
+        <h4>Ключевые операции</h4>
+        <table class="rule-table">
+          <tr><th>Опер.</th><th>Суть</th><th>СГД / Вычет</th><th>Комментарий</th></tr>
+          <tr><td>1</td><td>Реализация товаров</td><td>СГД: 900 000 − 50 000 − 20 000 = <b>830 000</b></td><td>Возврат из пред. периода уменьшает СГД; возврат тек. периода — корректировка вычета</td></tr>
+          <tr><td>2</td><td>Услуги: акт подписан заказчиком 08.01.2025</td><td>СГД 2025: <b>180 000</b></td><td>20 000 тыс. — дата подписания 08.01.25 → доход 2025 года!</td></tr>
+          <tr><td>3</td><td>Себестоимость товаров (COGS)</td><td>Вычет: 2 000 + 350 000 − 22 000 = <b>330 000</b></td><td>Страховое возмещение 35 000 = СГД; утрата от пожара 40 000 − 35 000 = 5 000 включены в себестоимость</td></tr>
+          <tr><td>4</td><td>Курсовые разницы</td><td>СГД: 80 000 + 5 000 = 85 000; Вычет: 110 000 + 16 000 = 126 000</td><td>Курсовые разницы — признаются в налоговом учёте</td></tr>
+          <tr><td>5</td><td>ФА: здание (гр.1), зем. участки</td><td>СГД: выбытие гр.1 → доход; Прирост зем. уч.</td><td>Прирост = цена − <b>первоначальная</b> стоимость! Зем. уч.1: 9 000−2 000=7 000; Зем.уч.2: 5 000&lt;8 000 → убыток 3 000</td></tr>
+          <tr><td>6</td><td>Выбытие НУО (оборудование, незавершёнка)</td><td>Прирост/убыток</td><td>Оборудование: 10 000−12 000 = убыток 2 000; Незавершёнка: 18 000−10 000 = прирост 8 000</td></tr>
+          <tr><td>7</td><td>Дивиденды от дочерней компании РК</td><td>СГД: <b>0</b></td><td>Дивиденды от юрлица РК — корректировка (уменьшение) СГД, если с них ранее уплачен КПН у источника</td></tr>
+          <tr><td>8</td><td>Расходы работодателя</td><td>Вычет: 250 000−40 000 = <b>210 000</b> (ФОТ) + соцплатежи</td><td>40 000 — в первонач. стоимость ФА, не вычет. Уплаченные соцплатежи: 8 000 − 800 (пред.г.) = 7 200; ФОСМС 6 500; ОПВР 2 600</td></tr>
+          <tr><td>9</td><td>Взаимосвязанный нерезидент ЕАЭС</td><td>Вычет: 10 000 USD × 450 тг = <b>4 500 000</b></td><td>Курс на дату выплаты (450), а не начисления (452). Взаимосвязанность не запрещает вычет при наличии ЭСФ</td></tr>
+          <tr><td>9б</td><td>Аренда офиса (неплательщик НДС)</td><td>Вычет: <b>6 000 000</b> (ЭСФ на 6 000 из 10 000)</td><td>ЭСФ только на 6 000 → вычет только 6 000. Оставшиеся 4 000 — без ЭСФ, не вычитаются</td></tr>
+          <tr><td>9в</td><td>Взаимосвязанный нерезидент льготное государство</td><td>Вычет: <b>0</b></td><td>Взаимосвязанная сторона + льготное государство → вычет по услугам не допускается (ст. 264)</td></tr>
+          <tr><td>10</td><td>Вознаграждение банку</td><td>Вычет: 4 050−300 (дек. пред.г.) = <b>3 750</b></td><td>Вычет только уплаченного в текущем году. 300 тыс. — за дек. прошлого = не вычет 2024.</td></tr>
+          <tr><td>10б</td><td>Вознаграждение нерезиденту (льготное гос-во)</td><td>Вычет: лимит по тонкой капитализации</td><td>ПК=4; CK=960 000; CO=3 750 000. Лимит вычета вознаграждения = CO×4 × (ставка вычета)</td></tr>
+        </table>
+        <div style="background:var(--warn-bg);border-left:3px solid var(--warn);padding:10px 14px;border-radius:0 6px 6px 0;margin-top:10px;font-size:12px;color:var(--fg2)">
+          ⚠️ <b>Ключевые ловушки D3:</b> Взаимосвязанная сторона из льготного государства → расходы не вычитаются (ст. 264). Прирост от зем. участка = цена − первоначальная стоимость. Убыток от одного участка уменьшает НОД.
+        </div>
+      </div>
+      <div class="card"><div class="card-title">Задание 2 — НДС I кв. 2024 (пропорциональный метод, ставка 12%)</div>
+        <table class="rule-table">
+          <tr><th>Опер.</th><th>Суть</th><th>Оборот</th><th>НДС</th></tr>
+          <tr><td>1</td><td>Отгрузка 30 марта; покупатель подписал накладную 01 апреля; ЭСФ — 05 апреля</td><td><b>0 в Q1</b></td><td>0 — оборот в Q2 (риски и выгоды перешли 01.04)</td></tr>
+          <tr><td>2</td><td>Экспорт в Киргизию, товар пересёк гос. границу 19 марта</td><td>4 600 × 459 = 2 111 400</td><td>0% (экспорт, нулевая ставка)</td></tr>
+          <tr><td>3</td><td>Продажа авто (ОС) сотруднику за 2 300 000; приобр. с НДС 4 100 000; балансовая 1 700 000</td><td>2 300 000 − 1 700 000 = <b>600 000</b></td><td>600 000 × 12% = 72 000 (ст. 388)</td></tr>
+          <tr><td>4</td><td>Скидка покупателю −500 000 тг (без НДС), ЭСФ 05 марта</td><td>−500 000</td><td>−60 000 корр.</td></tr>
+          <tr><td>5</td><td>Оплата за товары, купленные в 2020г. (НДС ранее исключён). Протокол 29 февраля</td><td>—</td><td>2 800 000 × 12/112 = 300 000 зачёт (восстановление)</td></tr>
+          <tr><td>6</td><td>Продажа доли в ТОО «ККК» за 10 000 000; получено 4 500 000 в марте</td><td>10 000 000</td><td>0 (освобождение — реализация доли участия)</td></tr>
+          <tr><td>7</td><td>Импорт упаковки из Китая; тамож. стоимость 9 300 USD × 450 = 4 185 000; пошлина 15%; сбор 5%</td><td>4 185 000 + 627 750 + 209 250 = 5 022 000</td><td>5 022 000 × 12% = <b>602 640</b> к уплате при ввозе</td></tr>
+          <tr><td>8</td><td>Подарочные сертификаты к 8 Марта (120 000 тг)</td><td>120 000</td><td>120 000 × 12% = 14 400 (реализация физлицам)</td></tr>
+          <tr><td>9</td><td>Дизайн-услуги из Бельгии: оплачено 2 000 EUR×502; акт 5 000 EUR×495; НДС уплачен 31 марта по курсу 492</td><td>2 000 × 502 = 1 004 000</td><td>1 004 000 × 12% = 120 480 (курс на дату оборота=дату оплаты); уплачен: в зачёт</td></tr>
+          <tr><td>10</td><td>Порча продукции 640 000 тг (в т.ч. с НДС покупки)</td><td>—</td><td>Корректировка: НДС по испорченным товарам исключить из зачёта. Доля товаров с НДС = 384 000/640 000 = 60%. НДС к восстановлению: 384 000 × 12/112 = 41 143 тг</td></tr>
+        </table>
+      </div>
+      <div class="card"><div class="card-title">Задание 3 — Опер. 2: ИПН работника (август 2024)</div>
+        <p>МРП = 3 692 тг, МЗП = 80 000 тг. Работник получает: зарплата 250 000, авто по балансовой 165 000 тг (продано за 150 000 тг с НДС).</p>
+        <table class="rule-table" style="margin-top:8px">
+          <tr><th>Показатель</th><th>Расчёт</th><th>Итог</th></tr>
+          <tr><td>3.2.1 Доход физлица от авто</td><td>165 000 − 150 000/1,12 = 165 000 − 133 929 = 31 071 тг</td><td><b>31 071 тг</b></td></tr>
+          <tr><td>3.2.2 Доход к ИПН</td><td>250 000 + 31 071 = 281 071 тг</td><td>281 071 тг</td></tr>
+          <tr><td>ОПВ 10%</td><td>281 071 × 10% = 28 107</td><td>28 107 тг</td></tr>
+          <tr><td>ВОСМС 2%</td><td>281 071 × 2% = 5 621</td><td>5 621 тг</td></tr>
+          <tr><td>Вычет 14 МРП</td><td>14 × 3 692 = 51 688</td><td>51 688 тг</td></tr>
+          <tr><td>3.2.3 Корректировка (матпомощь)</td><td>150 000 тг — матпомощь в тяж. мат. положении, единств. место работы → 882 МРП = 3 262 704 тг. 150 000 &lt; 882 МРП → <b>корректировка вся сумма 150 000</b></td><td>150 000 тг</td></tr>
+          <tr><td>Облагаемый ИПН</td><td>281 071 − 28 107 − 5 621 − 51 688 − 150 000 = 45 655</td><td>45 655 тг</td></tr>
+          <tr><td><b>ИПН 10%</b></td><td>45 655 × 10%</td><td><b>4 566 тг</b></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- QUIZ PANEL -->
+    <div id="panel-quiz" class="panel">
+      <div id="quiz-container"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PWA Install Banner -->
+<div id="install-banner">
+  <div class="install-icon">📲</div>
+  <div class="install-text">
+    <strong>Установить приложение</strong>
+    <span>Работает офлайн · без App Store</span>
+  </div>
+  <button id="install-btn">Установить</button>
+  <button id="install-dismiss" aria-label="Закрыть">✕</button>
+</div>
+
+<script>
+// ── Question bank ──────────────────────────────────────────────
+const QUESTIONS = [
+  // КПН
+  {cat:'kpn', tags:['d1'],
+   q:'Переоценка земельного участка с 23 000 до 30 000 тыс. тг была признана в бухучёте. При реализации за 34 000 тыс. тг доход от прироста стоимости для КПН составит:',
+   opts:['а) 4 000 тыс. тг (34 000 − 30 000)','б) 11 000 тыс. тг (34 000 − 23 000)','в) 7 000 тыс. тг (переоценка)','г) 0 тыс. тг (убыток не признаётся)'],
+   ans:1, exp:'По НК РК прирост стоимости = цена реализации − <b>первоначальная стоимость</b> приобретения (ст. 233). Переоценка в налоговом учёте не признаётся доходом и не увеличивает налоговую стоимость актива. Прирост = 34 000 − 23 000 = 11 000 тыс. тг.'},
+  {cat:'kpn', tags:['d1'],
+   q:'АВР на аренду за декабрь 2025 года выписан 31.12.2025, подписан арендатором 05.01.2026. В каком налоговом периоде признаётся доход?',
+   opts:['а) 2025 год (дата выписки АВР)','б) 2026 год (дата подписания арендатором)','в) 2025 год (дата выписки ЭСФ)','г) Равномерно в 2025 и 2026'],
+   ans:1, exp:'По ст. 237 НК РК дата признания дохода = дата подписания акта <b>обеими сторонами</b> (наиболее поздняя дата подписания). Арендатор подписал 05.01.2026 → доход признаётся в <b>2026 году</b>, несмотря на то что АВР выписан 31.12.2025.'},
+  {cat:'kpn', tags:['d1','d2'],
+   q:'Поставщик работает на СНР (розничный налог). Покупатель может взять его расходы на вычет по КПН при наличии:',
+   opts:['а) Нет, СНР-поставщик не даёт право на вычет','б) ЭСФ от поставщика','в) Только при общеустановленном режиме поставщика','г) Только при оплате безналичным путём'],
+   ans:1, exp:'Вычет по КПН и вычет по НДС — разные вещи. По ст. 243 НК РК расходы вычитаются при наличии <b>ЭСФ</b>. Налоговый режим поставщика (СНР, розничный налог, УД) <b>не ограничивает</b> право покупателя на вычет. СНР-поставщик не является плательщиком НДС, поэтому НДС в зачёт взять нельзя — но вычет по КПН разрешён при наличии ЭСФ.'},
+  {cat:'kpn', tags:['d1'],
+   q:'Норма командировочных расходов при поездке по РК для вычета по КПН составляет:',
+   opts:['а) 6 МРП в сутки','б) 8 МРП в сутки','в) 10 МРП в сутки','г) Полная фактическая сумма без ограничений'],
+   ans:0, exp:'<b>Для КПН-вычета</b> норма суточных при командировке по РК = <b>6 МРП в сутки</b> (ст. 244 НК РК). <b>Для ИПН-освобождения</b> норма = 8 МРП в сутки. Это важное отличие, которое проверяется на экзамене ПСАД.'},
+  {cat:'kpn', tags:['d2'],
+   q:'ТОО получило дивиденды от дочерней компании-резидента РК в размере 70 000 тыс. тг из прибыли предыдущего года. Как отражается это в СГД для КПН?',
+   opts:['а) Полностью включается в СГД','б) Исключается из СГД (корректировка) при условии что с них ранее уплачен КПН','в) Облагается по ставке 5%','г) Облагается по ставке 15%'],
+   ans:1, exp:'Дивиденды, полученные от юрлица-резидента РК, при условии что с них уже был удержан КПН у источника выплаты, <b>исключаются из СГД</b> (корректировка по ст. 241 НК РК). Это устраняет двойное налогообложение.'},
+  {cat:'kpn', tags:['d3'],
+   q:'ТОО приобрело услуги у взаимосвязанного нерезидента, зарегистрированного в государстве с льготным налогообложением (офшор). Услуги стоимостью 20 000 USD оказаны и оплачены. Сумма расходов, подлежащая вычету по КПН:',
+   opts:['а) Полная сумма 20 000 USD по курсу на дату начисления','б) 20 000 USD по курсу на дату выплаты','в) 0 — расходы не вычитаются','г) 50% от суммы'],
+   ans:2, exp:'По ст. 264 НК РК расходы по услугам от <b>взаимосвязанной стороны</b>, зарегистрированной в государстве с льготным налогообложением, <b>не подлежат вычету</b>. Это жёсткое правило, не зависящее от наличия ЭСФ или рыночности цены.'},
+  {cat:'kpn', tags:['d3'],
+   q:'Авансовые платежи по КПН в I квартале (до подачи декларации за прошлый год) рассчитываются как:',
+   opts:['а) ¼ от КПН предыдущего года','б) ¼ от прогнозируемого КПН текущего года','в) ¼ от авансов прошлого года','г) 1/12 от КПН за 2 предыдущих года'],
+   ans:0, exp:'До подачи декларации за предыдущий год авансы за I квартал = <b>¼ от суммы КПН</b> по декларации предыдущего налогового периода. После подачи декларации авансы пересчитываются исходя из прогноза текущего года.'},
+  // НДС
+  {cat:'nds', tags:['d1'],
+   q:'ТОО реализовало акции АО «Береке» за 12 000 000 тг. Место реализации — РК. Как это отражается в НДС?',
+   opts:['а) Облагаемый оборот 12%, НДС = 1 440 000 тг','б) Нулевая ставка 0%','в) Освобождённый оборот, НДС = 0','г) Не является оборотом по реализации'],
+   ans:2, exp:'Реализация ценных бумаг (акций) — <b>освобождённый от НДС оборот</b> (ст. 397 НК РК). Включается в знаменатель пропорции при пропорциональном методе. Отличие от нулевой ставки: при освобождении входящий НДС в зачёт не берётся.'},
+  {cat:'nds', tags:['d1','d2'],
+   q:'Место реализации инжиниринговых услуг, оказанных нерезидентом из Германии дистанционно резиденту РК, определяется как:',
+   opts:['а) Германия (место нахождения исполнителя)','б) Место фактического оказания услуг','в) РК (место нахождения покупателя)','г) Не является объектом НДС'],
+   ans:2, exp:'По ст. 441 НК РК для инжиниринговых услуг место реализации = <b>место нахождения покупателя</b>. Покупатель — резидент РК → место реализации = РК → ТОО является налоговым агентом и обязано исчислить и уплатить НДС за нерезидента.'},
+  {cat:'nds', tags:['d1','d2'],
+   q:'ТОО не является плательщиком НДС. Приобретены консультационные услуги у нерезидента из Бельгии (место реализации — РК). Обязано ли ТОО уплатить НДС за нерезидента?',
+   opts:['а) Нет, только плательщики НДС обязаны','б) Да, любой резидент РК обязан уплатить НДС за нерезидента','в) Нет, если сумма услуг ниже порога регистрации','г) Только если есть письменный договор'],
+   ans:1, exp:'По ст. 454 НК РК обязанность уплатить НДС за нерезидента (при месте реализации в РК) возникает у <b>любого</b> резидента РК, независимо от статуса плательщика НДС. Отличие: плательщик НДС может взять этот НДС в зачёт; неплательщик — нет, это его расходы.'},
+  {cat:'nds', tags:['d2'],
+   q:'ТОО осуществило гарантийный ремонт оборудования покупателю (безвозмездно). Запчасти на сумму 780 000 тг использованы из запасов. Какой НДС-эффект?',
+   opts:['а) Облагаемый оборот 780 000 тг, НДС = 93 600 тг','б) Освобождённый оборот; ранее взятый в зачёт НДС по запчастям восстанавливается','в) Нулевая ставка, НДС в зачёт сохраняется','г) Нет НДС-последствий'],
+   ans:1, exp:'Гарантийный ремонт — <b>освобождённый оборот</b> (ст. 397 НК РК), НДС не начисляется. Но поскольку запчасти использованы для освобождённого оборота, ранее принятый в зачёт НДС по запчастям (780 000 × 12% = 93 600 тг) должен быть <b>восстановлен</b> (исключён из зачёта). Это в отличие от постгарантийного ремонта, который облагается НДС.'},
+  {cat:'nds', tags:['d2'],
+   q:'ТОО реализовало основное средство (компьютер) сотруднику за 150 000 тг (с НДС). Компьютер куплен за 172 000 тг (с НДС), балансовая стоимость 165 000 тг. Облагаемый оборот по НДС:',
+   opts:['а) 150 000 / 1,12 = 133 929 тг','б) 0 (убыток — нет оборота)','в) 165 000 тг (балансовая стоимость)','г) 150 000 тг полностью'],
+   ans:2, exp:'По ст. 388 НК РК при реализации ОС, по которому НДС был принят в зачёт, <b>минимальный облагаемый оборот</b> = <b>балансовая стоимость</b>. Если цена реализации (133 929 без НДС) < балансовой (165 000), оборот = балансовая стоимость = 165 000 тг. НДС = 165 000 × 12% = 19 800 тг.'},
+  {cat:'nds', tags:['d3'],
+   q:'30 марта 2024 г. отгружена продукция покупателю. По договору риски переходят при подписании покупателем накладной на отпуск. Накладную покупатель подписал 01 апреля 2024. ЭСФ выписан 05 апреля. В каком квартале возникает оборот по НДС?',
+   opts:['а) I квартал (дата отгрузки 30 марта)','б) I квартал (дата ЭСФ 05 апреля — нет, слишком поздно)','в) II квартал (риски перешли 01 апреля)','г) II квартал (дата ЭСФ 05 апреля)'],
+   ans:2, exp:'По ст. 380 НК РК оборот по реализации возникает в момент передачи права собственности (рисков и выгод). По договору риски перешли при подписании накладной покупателем — <b>01 апреля 2024</b> → оборот возникает во <b>II квартале</b>. Дата ЭСФ значения не имеет.'},
+  {cat:'nds', tags:['d3'],
+   q:'При расчёте НДС на импортируемые товары в облагаемый импорт включаются:',
+   opts:['а) Только таможенная стоимость','б) Таможенная стоимость + таможенные пошлины + акцизы','в) Инвойсовая стоимость без пошлин','г) Только стоимость по инвойсу поставщика'],
+   ans:1, exp:'По ст. 444 НК РК облагаемый импорт = <b>таможенная стоимость + таможенные пошлины + акцизы</b> (по подакцизным товарам). Таможенные сборы и НДС при этом в базу НДС не включаются. Инвойсовая стоимость ≠ таможенная стоимость (таможенная определяется по методам ТК ЕАЭС).'},
+  // ИПН / Соцналог
+  {cat:'ipn', tags:['d1'],
+   q:'Работник направлен в командировку по РК на 5 суток. Выплачены суточные 150 000 тг. МРП = 3 932 тг. Какая сумма является облагаемым доходом для ИПН?',
+   opts:['а) 0 тг — выплачено меньше нормы','б) 150 000 тг (полностью)','в) 7 280 тг (сверхнормативные)','г) 150 000 тг — командировочные не освобождены'],
+   ans:0, exp:'Норма суточных для ИПН = <b>8 МРП в сутки</b>: 8 × 3 932 × 5 = <b>157 280 тг</b>. Фактически выплачено 150 000 тг &lt; нормы (157 280) → сверхнормативных нет → <b>облагаемый ИПН = 0 тг</b>. Важно не путать: для <b>КПН-вычета</b> норма = 6 МРП (6 × 3 932 × 5 = 117 960 тг), а для <b>ИПН-освобождения</b> = 8 МРП.'},
+  {cat:'ipn', tags:['d2'],
+   q:'Нерезидент РК (Фадеев А.А., Узбекистан) работает в казахстанском ТОО. Облагаемый доход 1 000 000 тг. Ставка ИПН и порядок вычетов:',
+   opts:['а) 10% без вычетов (нерезидент)','б) 10% с вычетом ОПВ и 14 МРП','в) 15% без вычетов','г) 20% — нерезидент из ЕАЭС'],
+   ans:0, exp:'Нерезиденты РК уплачивают ИПН по ставке <b>10%</b> с доходов у источника в РК (<b>без налоговых вычетов</b> — ОПВ, стандартный вычет, ВОСМС). ИПН = 1 000 000 × 10% = 100 000 тг. Страны ЕАЭС не дают автоматического права на вычеты — это определяется статусом резидентства (180+ дней или центр жизненных интересов).'},
+  {cat:'ipn', tags:['d2'],
+   q:'Расходы работодателя: доходы работников 250 000 тыс. тг, в т.ч. 40 000 тыс. включаются в первоначальную стоимость ФА. Выплачены соцотчисления 7 500 тыс., в т.ч. 800 тыс. за предыдущий год. Вычет расходов работодателя по КПН:',
+   opts:['а) 250 000 + 7 500 = 257 500 тыс.','б) (250 000 − 40 000) + (7 500 − 800) = 216 700 тыс.','в) 250 000 тыс. (полностью)','г) 210 000 тыс. (без соцплатежей)'],
+   ans:1, exp:'Расходы по ФОТ: 250 000 − 40 000 (капитализируются в ФА, не вычет) = 210 000 тыс. Соцплатежи: вычитаются уплаченные в текущем периоде. 7 500 − 800 (за пред. год — уже вычтены ранее) = 6 700 тыс. Итого вычет = 210 000 + 6 700 = 216 700 тыс. тг.'},
+  {cat:'ipn', tags:['d3'],
+   q:'Работник получил материальную помощь 150 000 тг в связи с тяжёлым материальным положением. Это его единственное место работы. МРП = 3 692 тг. Корректировка дохода (исключение из ИПН):',
+   opts:['а) 0 (матпомощь облагается полностью)','б) 94 МРП = 347 048 тг — лимит не превышен, корректировка вся сумма','в) 150 000 тг — полная корректировка (лимит 882 МРП не превышен)','г) 150 000 − 94 МРП = 150 000 − 347 048 = 0 (убыток)'],
+   ans:2, exp:'Матпомощь в тяжёлом материальном положении по единственному месту работы освобождается от ИПН в размере до <b>882 МРП</b> (ст. 341 НК РК). 882 × 3 692 = 3 256 344 тг. Фактически 150 000 тг << 882 МРП → <b>корректировка = вся сумма 150 000 тг</b>.'},
+  {cat:'ipn', tags:['d1','d2'],
+   q:'Соцналог к уплате в бюджет = ?',
+   opts:['а) ФОТ × ставку соцналога','б) (ФОТ − ОПВ − ВОСМС) × ставку − соцотчисления','в) ФОТ × ставку − ОПВ','г) Объект × ставку (соцотчисления не уменьшают)'],
+   ans:1, exp:'Соцналог к уплате = <b>объект × ставка − соцотчисления</b>. Объект соцналога = ФОТ − ОПВ − ВОСМС. Соцотчисления (3,5% от (ФОТ − ОПВ)) уменьшают соцналог к уплате, но не могут привести к отрицательному результату (минимум 0).'},
+  // Нерезиденты
+  {cat:'nr', tags:['d1','d2'],
+   q:'Германский нерезидент оказал инжиниринговые услуги резиденту РК. Сертификат резидентства Германии представлен ПОСЛЕ выплаты дохода. Конвенция РК-Германия:',
+   opts:['а) Применяется — достаточно сертификата в любое время','б) Не применяется — сертификат должен быть ДО даты выплаты','в) Применяется на 50%','г) Применяется только к следующей выплате'],
+   ans:1, exp:'По НК РК для применения конвенции об избежании двойного налогообложения у источника выплаты сертификат резидентства иностранного государства должен быть представлен налоговому агенту <b>до даты выплаты дохода</b>. Если сертификат представлен после — конвенция у источника не применяется. Нерезидент может впоследствии подать на возврат налога.'},
+  {cat:'nr', tags:['d1','d2'],
+   q:'Для налогообложения роялти нерезидента из Германии (сертификат не представлен) применяется ставка КПН у источника:',
+   opts:['а) 20% (прочие доходы)','б) 15% (роялти — отдельная ставка)','в) 10%','г) 5% (льгота по конвенции)'],
+   ans:1, exp:'Ставки КПН у источника выплаты по ст. 682 НК РК: роялти — <b>15%</b>; вознаграждение — 15%; дивиденды — 15% (5% льгота); прочие доходы — 20%; инжиниринг, управление — 20%. При роялти ставка = <b>15%</b>.'},
+  {cat:'nr', tags:['d2'],
+   q:'Нерезидент владеет долей в ТОО-резиденте РК более 3 лет. ТОО не является недропользователем. Выплата дивидендов нерезиденту. Ставка КПН у источника:',
+   opts:['а) 15% (стандартная ставка для нерезидентов)','б) 0% (освобождение по ст. 682 п.9)','в) 5%','г) 10%'],
+   ans:1, exp:'По ст. 682 п.9 НК РК дивиденды освобождаются от КПН у источника при одновременном выполнении условий: (1) владение долей более <b>3 лет</b>, (2) ТОО <b>не является недропользователем</b>. Оба условия выполнены → ставка <b>0% (освобождение)</b>. Сертификат резидентства для применения этой нормы не требуется — это льгота НК, не конвенции.'},
+  {cat:'nr', tags:['d1','d3'],
+   q:'Курс для расчёта НДС за нерезидента при предоплате: предоплата 03 марта (курс 496,71), акт подписан 15 марта (курс 505,15). Какой курс применяется?',
+   opts:['а) Курс на дату акта (505,15)','б) Среднее между курсами','в) Курс на более раннюю дату — предоплату (496,71)','г) Курс НБ РК на 1 января'],
+   ans:2, exp:'Дата оборота = <b>более ранняя</b> из: дата оплаты и дата подписания акта (ст. 454 НК РК). Предоплата 03 марта — раньше акта 15 марта → дата оборота = 03.03. Курс НБ РК = <b>496,71</b>. Обратите внимание: используется официальный курс НБ РК, не банковский обменный курс.'},
+  // Налоговое администрирование
+  {cat:'admin', tags:['d3'],
+   q:'Основанием для проведения налогового обследования является:',
+   opts:['а) Контроль за подакцизными товарами','б) Невозможность вручить извещение о налоговой проверке','в) Контроль за ККМ','г) Необходимость вручить предписание о налоговой проверке'],
+   ans:1, exp:'Налоговое обследование проводится в случае <b>невозможности вручить налогоплательщику (налоговому агенту) извещение о проведении налоговой проверки</b>. Это специальный инструмент, позволяющий установить фактический адрес и статус налогоплательщика.'},
+  {cat:'admin', tags:['d3'],
+   q:'На какой срок может быть перенесён установленный НК РК срок уплаты налогов?',
+   opts:['а) Не более 9 месяцев','б) Не более 10 месяцев','в) Не более 6 месяцев','г) Не более 12 месяцев'],
+   ans:1, exp:'По НК РК срок уплаты налогов может быть перенесён на срок <b>не более 10 месяцев</b>. Для переноса необходимо основание (например, угроза банкротства, сезонный характер производства).'},
+  {cat:'admin', tags:['d3'],
+   q:'В отчётности по форме 101.04 доход нерезидента отражается в периоде:',
+   opts:['а) 1 квартал следующего года','б) 2 квартал следующего года (при выплате в апреле)','в) 4 квартал года, в котором оказаны услуги','г) 3 квартал года, в котором оказаны услуги'],
+   ans:2, exp:'По НК РК в форме 101.04 доход нерезидента отражается в периоде, когда <b>возникло обязательство</b> по его выплате (дата начисления или оказания услуги). Если услуги оказаны в Q3 — отражается в Q3, даже если оплата в апреле следующего года. Дата выплаты влияет на срок уплаты налога, но не на период отражения в отчётности.'},
+  {cat:'admin', tags:['d3'],
+   q:'Срок представления налоговой отчётности по акцизам для компании, реализующей алкогольную продукцию оптом и в розницу:',
+   opts:['а) Не позднее 15-го числа следующего месяца','б) Не позднее 20-го числа следующего месяца','в) Не позднее 20-го числа второго месяца после отчётного','г) Не позднее 15-го числа второго месяца после отчётного'],
+   ans:1, exp:'По НК РК декларация по акцизам представляется не позднее <b>20-го числа месяца, следующего за отчётным налоговым периодом</b>. Отчётный период по акцизам — квартал для розничной реализации и месяц для оптовой. Важно: если компания работает и оптом, и в розницу, применяется квартальный период.'},
+  {cat:'admin', tags:['d3'],
+   q:'При налоговом контроле физических лиц налоговые органы вправе применять косвенный метод определения дохода:',
+   opts:['а) Метод прироста стоимости активов','б) Метод документирования приобретений','в) Метод документирования затрат','г) Все перечисленные методы'],
+   ans:3, exp:'По НК РК при несоответствии задекларированных доходов расходам (в т.ч. на приобретение имущества) налоговые органы вправе применить <b>один или несколько</b> косвенных методов: метод прироста стоимости активов, метод документирования приобретений, метод документирования затрат, метод уменьшения обязательств.'},
+
+  // ── 2026 изменения ──────────────────────────────────────────
+  {cat:'nds', tags:['2026'],
+   q:'С 01.01.2026 каков порог оборота для обязательной постановки на учёт по НДС (в МРП)?',
+   opts:['а) 30 000 МРП','б) 20 000 МРП','в) 10 000 МРП','г) 15 000 МРП'],
+   ans:2, exp:'С 01.01.2026 порог снижен с 30 000 до <b>10 000 МРП</b> (≈ 43,25 млн тг при МРП 4 325 тг). Важно: регистрация в том месяце, когда превышен порог — не по итогу года. Налоговый орган не обязан уведомлять.'},
+  {cat:'ipn', tags:['2026'],
+   q:'С 01.01.2026 базовый вычет для расчёта ИПН по заработной плате составляет:',
+   opts:['а) 14 МРП в месяц','б) 30 МРП в месяц (макс 360 МРП/год)','в) 20 МРП в месяц','г) 882 МРП в год'],
+   ans:1, exp:'С 01.01.2026 базовый вычет увеличен с 14 МРП до <b>30 МРП в месяц</b> (максимум 360 МРП в год). Это означает: при МРП 4 325 тг вычет = 129 750 тг/мес. Если работник работает у нескольких работодателей — вычет применяет каждый (сложность для бухгалтера).'},
+  {cat:'ipn', tags:['2026'],
+   q:'С 01.01.2026 введена прогрессивная ставка ИПН. Какие ставки применяются?',
+   opts:['а) 10% для всех доходов без изменений','б) 10% до 8 500 МРП/год, 15% свыше','в) 12% до 10 000 МРП/год, 20% свыше','г) 10% до 5 000 МРП/год, 15% свыше'],
+   ans:1, exp:'С 01.01.2026: <b>10%</b> — доход до 8 500 МРП в год (≈ 36,8 млн тг), <b>15%</b> — сумма превышения. Порог 8 500 МРП рассчитывается накопительно. Нерезиденты: по-прежнему 10% без вычетов и без прогрессии.'},
+  {cat:'nds', tags:['2026'],
+   q:'С 01.01.2026 льготная ставка НДС 5% применяется к:',
+   opts:['а) Всем товарам первой необходимости','б) Медикаментам и медицинским услугам','в) Образовательным услугам','г) Экспорту услуг'],
+   ans:1, exp:'С 01.01.2026 введена льготная ставка НДС <b>5%</b> для медикаментов и медицинских услуг (с 2027 года ставка вырастет до 10%). Экспорт товаров/услуг — ставка 0%. Образовательные услуги — освобождены (ст. 394 НК РК).'},
+  {cat:'ipn', tags:['2026'],
+   q:'МРП с 01.01.2026 в тенге:',
+   opts:['а) 3 932 тг','б) 4 205 тг','в) 4 325 тг','г) 4 500 тг'],
+   ans:2, exp:'МРП с 01.01.2026 = <b>4 325 тенге</b> (закон о республиканском бюджете на 2026–2028 годы, подписан 08.12.2025). Для сравнения: в 2025 году — 3 932 тг (до 18.07.25), затем 4 205 тг.'},
+];
+
+// ── State ─────────────────────────────────────────────────────
+let current = 0, score = 0, answered = false, activeQuiz = [], quizCat = 'all';
+
+function show(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('panel-' + id);
+  if (panel) panel.classList.add('active');
+  const nav = [...document.querySelectorAll('.nav-item')].find(b => b.getAttribute('onclick') === `show('${id}')`);
+  if (nav) nav.classList.add('active');
+}
+
+function startQuiz(cat) {
+  quizCat = cat;
+  activeQuiz = cat === 'all' ? [...QUESTIONS] : QUESTIONS.filter(q => q.cat === cat);
+  // shuffle
+  for (let i = activeQuiz.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [activeQuiz[i], activeQuiz[j]] = [activeQuiz[j], activeQuiz[i]];
+  }
+  current = 0; score = 0;
+  show('quiz');
+  renderQuestion();
+  // mark nav active
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  const navBtn = [...document.querySelectorAll('.nav-item')].find(b => b.getAttribute('onclick') === `startQuiz('${cat}')`);
+  if (navBtn) navBtn.classList.add('active');
+}
+
+function renderQuestion() {
+  const container = document.getElementById('quiz-container');
+  if (current >= activeQuiz.length) { renderResult(container); return; }
+  const q = activeQuiz[current];
+  answered = false;
+  const pct = Math.round(current / activeQuiz.length * 100);
+  const catNames = {all:'Все вопросы',kpn:'КПН',nds:'НДС',ipn:'ИПН / Соцналог',admin:'Администрирование',nr:'Нерезиденты'};
+  container.innerHTML = `
+    <div style="padding:24px;max-width:720px">
+      <div class="quiz-header">
+        <div class="quiz-progress">
+          <div style="font-size:12px;color:var(--fg2);margin-bottom:4px">${catNames[quizCat]} · Вопрос ${current+1} из ${activeQuiz.length}</div>
+          <div class="quiz-progress-bar"><div class="quiz-progress-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="quiz-score">Верно: <b>${score}</b></div>
+      </div>
+      <div class="question-card">
+        <div class="question-num">${q.tags.map(t=>`<span class="tag tag-${t}">${t.toUpperCase()}</span>`).join('')}</div>
+        <div class="question-text">${q.q}</div>
+        <div class="options">
+          ${q.opts.map((o,i)=>`<button class="option-btn" onclick="answer(${i})" id="opt-${i}"><span class="opt-letter">${String.fromCharCode(65+i)})</span><span>${o.replace(/^[а-гa-d]\)/,'').trim()}</span></button>`).join('')}
+        </div>
+        <div id="explanation" style="display:none" class="explanation"></div>
+        <div class="quiz-nav">
+          <span></span>
+          <button class="btn btn-primary" id="next-btn" onclick="nextQ()" style="display:none">Следующий →</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function answer(idx) {
+  if (answered) return;
+  answered = true;
+  const q = activeQuiz[current];
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+  if (idx === q.ans) {
+    score++;
+    btns[idx].classList.add('correct');
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[q.ans].classList.add('correct');
+  }
+  const exp = document.getElementById('explanation');
+  exp.innerHTML = `<b>${idx === q.ans ? '✓ Верно!' : '✗ Неверно.'}</b> ${q.exp}`;
+  exp.style.display = 'block';
+  document.getElementById('next-btn').style.display = 'inline-block';
+}
+
+function nextQ() { current++; renderQuestion(); }
+
+function renderResult(container) {
+  const pct = Math.round(score / activeQuiz.length * 100);
+  const stars = pct >= 80 ? '🌟🌟🌟' : pct >= 60 ? '⭐⭐' : '⭐';
+  const msg = pct >= 80 ? 'Отличный результат!' : pct >= 60 ? 'Хороший результат, есть что повторить.' : 'Нужно повторить материал.';
+  container.innerHTML = `
+    <div style="padding:24px;max-width:720px">
+      <div class="question-card result-box">
+        <div class="result-stars">${stars}</div>
+        <div class="result-score">${score}/${activeQuiz.length}</div>
+        <div class="result-label">${pct}% · ${msg}</div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+          <button class="btn btn-primary" onclick="startQuiz('${quizCat}')">Повторить тест</button>
+          <button class="btn btn-secondary" onclick="show('home')">На главную</button>
+          <button class="btn btn-secondary" onclick="startQuiz('all')">Все вопросы</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleTheme() {
+  const r = document.documentElement;
+  if (!r.dataset.theme || r.dataset.theme === 'light') r.dataset.theme = 'dark';
+  else r.dataset.theme = 'light';
+  try { localStorage.setItem('psad-theme', r.dataset.theme); } catch(e) {}
+}
+try { const t = localStorage.getItem('psad-theme'); if (t) document.documentElement.dataset.theme = t; } catch(e) {}
+
+// ── PWA: Service Worker ────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+// ── PWA: Install banner ────────────────────────────────────────
+let deferredPrompt = null;
+const installBanner = document.getElementById('install-banner');
+const installBtn = document.getElementById('install-btn');
+const dismissBtn = document.getElementById('install-dismiss');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (installBanner) installBanner.style.display = 'flex';
+});
+
+if (installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (installBanner) installBanner.style.display = 'none';
+  });
+}
+if (dismissBtn) {
+  dismissBtn.addEventListener('click', () => {
+    if (installBanner) installBanner.style.display = 'none';
+    try { localStorage.setItem('psad-install-dismissed', '1'); } catch(e) {}
+  });
+}
+// Don't show if already dismissed
+try {
+  if (localStorage.getItem('psad-install-dismissed') === '1' && installBanner) {
+    installBanner.style.display = 'none';
+  }
+} catch(e) {}
+
+window.addEventListener('appinstalled', () => {
+  if (installBanner) installBanner.style.display = 'none';
+  deferredPrompt = null;
+});
+</script>
+</body>
+</html>

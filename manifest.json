@@ -1,0 +1,26 @@
+{
+  "name": "ПСАД Тренажёр — Налоги РК",
+  "short_name": "ПСАД Налоги",
+  "description": "Интерактивный тренажёр по налогам Казахстана для подготовки к экзаменам ПСАД (D1, D2, D3)",
+  "lang": "ru",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#13120f",
+  "theme_color": "#1e5c8f",
+  "categories": ["education", "finance"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
